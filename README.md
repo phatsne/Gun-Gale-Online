@@ -158,3 +158,4 @@ Mở Output trong Studio và xem:
 - File `.rbxm`/`.rbxmx` nên nằm trong `assets/` và không cần khai báo từng file trong JSON.
 - File ảnh/âm thanh/animation không tự động sync bằng Rojo; cần import/publish trong Roblox Studio rồi dùng `rbxassetid://...`.
 - File code và script nên được quản lý trên Git như bình thường.
+- File .gitkeep dùng để giữ thư mục trên git mà kg bị mất
