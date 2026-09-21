@@ -2,67 +2,159 @@
 
 Roblox game project dùng Luau + Rojo.
 
-## Cấu trúc
+## Cấu trúc thư mục
 
 ```text
-Gun-Gale-Online/
-├── default.project.json     # Mapping từ file system vào Roblox DataModel
-├── src/
-│   ├── server/               # Script chạy trên server
-│   │   └── Main.server.luau
-│   ├── client/               # LocalScript chạy trên client
-│   │   └── Main.client.luau
-│   └── shared/               # ModuleScript dùng chung
-│       └── Config.luau
-└── README.md
+project/
+├── src/                 ← scripts (client/server/shared)
+├── assets/              ← .rbxm/.rbxmx files go here
+├── default.project.json
+├── aftman.toml
+├── README.md
 ```
 
-## Cài Rojo trên Windows
+```text
+assets/
+├── models/
+├── UI/
+├── VFX/
+```
 
-1. Cài **Rojo** plugin trong Roblox Studio từ Creator Store: https://create.roblox.com/store/asset/2611598175/Rojo
-2. Cài **Rojo CLI** theo một trong hai cách:
-	- Dùng Aftman: cài Aftman, mở Terminal tại thư mục project, rồi chạy:
+## Rojo asset setup
 
-	  ```powershell
-	  aftman add rojo-rbx/rojo
-	  aftman install
-	  ```
+### 1. Point Rojo at the whole assets folder
 
-	- Hoặc tải bản phát hành Rojo và thêm file `rojo.exe` vào `PATH`.
+Trong [default.project.json](default.project.json):
 
-3. Kiểm tra CLI:
+```json
+{
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Assets": {
+        "$path": "assets"
+      },
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    }
+  }
+}
+```
 
-	```powershell
-	rojo --version
-	```
+Every `.rbxm` inside `assets/` automatically becomes a child instance in Studio, named after its filename. Add a new file → it just appears, no config edit needed.
 
-## Link project vào Roblox Studio
+### 2. Exporting an asset from Studio into the project
 
-1. Mở Roblox Studio và tạo một **Baseplate** mới.
-2. Trong VS Code, mở Terminal tại `C:\Projects\Gun-Gale-Online`.
-3. Chạy:
+- Right-click instance in Explorer
+- Select **Save to File...**
+- Save into `assets/`
+- To update an existing asset later, overwrite the same filename instead of creating a new one
 
-	```powershell
-	rojo serve default.project.json
-	```
+### 3. Team sync loop
 
-4. Trong Roblox Studio, mở plugin **Rojo** và chọn **Connect**.
-5. Chọn server đang chạy, thường là `localhost:34872`.
-6. Khi kết nối thành công, cây object trong Studio sẽ được tạo từ `default.project.json`.
+```text
+pull latest from Git
+   ↓
+rojo serve (if not already running, picks up new/changed .rbxm automatically)
+   ↓
+open Studio, connect to Rojo plugin (localhost:34872)
+   ↓
+edit asset in Studio
+   ↓
+Save to File (overwrite same filename)
+   ↓
+commit + push to Git
+```
 
-Không chỉnh sửa script được Rojo quản lý trực tiếp trong Studio. Hãy sửa file trong VS Code, sau đó Rojo sẽ tự đồng bộ thay đổi.
+### 4. Key rules for the team
 
-## Chạy và test
+- One person edits a given `.rbxm` at a time — binary files can't be merged, last push wins.
+- Scripts (`.lua`/`.luau`) are safe to edit simultaneously — those get real diffs/merges.
+- For live simultaneous building (not code), use Team Create instead — it complements this setup, doesn't replace it.
 
-- Nhấn **Play** trong Studio để chạy cả server và client.
-- Mở cửa sổ **View > Output**. Bạn sẽ thấy:
-  - `[Gun Gale Online] Server started - version 0.1.0`
-  - `[Gun Gale Online] Client started - version 0.1.0`
-- Khi test multiplayer, dùng **Test > Start** và chọn số lượng player mong muốn.
-- Khi dừng test, giữ Terminal Rojo chạy để tiếp tục đồng bộ; nhấn `Ctrl+C` khi muốn ngắt kết nối.
+## Cài đặt và chạy project trên Windows
+
+### 1. Cài Aftman
+
+```powershell
+winget install --id LPGhatguy.Aftman -e --accept-source-agreements --accept-package-agreements
+```
+
+Sau khi cài xong, đóng mở lại terminal hoặc VS Code.
+
+### 2. Kiểm tra Aftman
+
+```powershell
+aftman --version
+```
+
+### 3. Cài Rojo theo project
+
+```powershell
+cd C:\Projects\Gun-Gale-Online
+aftman install
+```
+
+### 4. Chạy server sync
+
+```powershell
+$env:Path = "$env:USERPROFILE\.aftman\bin;$env:Path"
+rojo --version
+rojo serve default.project.json
+```
+
+Khi server chạy, terminal sẽ hiển thị:
+
+```text
+Rojo 7.7.0
+Rojo server listening:
+  Address: localhost
+  Port:    34872
+```
+
+### 5. Kết nối trong Roblox Studio
+
+1. Mở Roblox Studio.
+2. Cài plugin **Rojo** nếu chưa có.
+3. Mở plugin **Rojo**.
+4. Chọn **Connect**.
+5. Chọn `localhost:34872`.
+6. Play thử game.
+
+### 6. Kiểm tra test
+
+Mở Output trong Studio và xem:
+
+```text
+[Gun Gale Online] Server started - version 0.1.0
+[Gun Gale Online] Client started - version 0.1.0
+```
 
 ## Quy tắc đặt file Luau
 
 - `*.server.luau`: script chạy trên server.
 - `*.client.luau`: LocalScript chạy trên client.
 - `*.luau` không có hậu tố server/client: ModuleScript hoặc code dùng chung.
+
+## Lưu ý cho team asset
+
+- File `.rbxm`/`.rbxmx` nên nằm trong `assets/` và không cần khai báo từng file trong JSON.
+- File ảnh/âm thanh/animation không tự động sync bằng Rojo; cần import/publish trong Roblox Studio rồi dùng `rbxassetid://...`.
+- File code và script nên được quản lý trên Git như bình thường.
